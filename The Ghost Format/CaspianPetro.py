@@ -9,17 +9,18 @@ class CaspianSGX:
         self.filename = os.path.basename(file_path)
         self.header = {}
         self.data = None
+        self.raw_head = None
 
     def read(self):
         file_size = os.path.getsize(self.file_path)
         
         with open(self.file_path, 'rb') as f:
-            head_bytes = f.read(64)
+            self.raw_head = f.read(64)
             
-            if head_bytes[:8] != b'CPETRO01':
+            if self.raw_head[:8] != b'CPETRO01':
                 return False
 
-            ints = struct.unpack('<4I', head_bytes[8:24])
+            ints = struct.unpack('<4I', self.raw_head[8:24])
             self.header = {
                 'survey_id': ints[0],
                 'dim_1': ints[1],
@@ -60,8 +61,6 @@ class CaspianSGX:
             matrix = self.data.reshape((-1, 1))
 
         df = pd.DataFrame(matrix)
-        
-        # FIX: Force all column names to string to avoid Parquet warnings
         df.columns = df.columns.astype(str)
         
         df['survey_id'] = self.header['survey_id']
@@ -70,7 +69,6 @@ class CaspianSGX:
         return df
 
 def main(DATA_DIR):
-
     if not os.path.exists(DATA_DIR):
         print(f"Error: Directory not found at {DATA_DIR}")
         return
@@ -89,15 +87,27 @@ def main(DATA_DIR):
                 try:
                     loader = CaspianSGX(full_path)
                     if loader.read():
-                        df = loader.to_dataframe()
+                        print(f"\n--- {file} ---")
                         
+                        hex_bytes = " ".join(f"{b:02X}" for b in loader.raw_head[:16])
+                        print(f"File Signature: {loader.raw_head[:8].decode()},    ID   : Survey {loader.header['survey_id']}") 
+                        
+                        d1, d2 = loader.header['dim_1'], loader.header['dim_2']
+                        print(f"  {'Dimensions':<12} : {d1} x {d2} (Traces/Samples)")
+
+                        file_end = os.path.getsize(full_path)
+
+                        print(f" - Data Range: Bytes 64 - {file_end}")
+                        print(f" - Storage: {loader.header['format']} (Little Endian)")
+
+                        df = loader.to_dataframe()
                         out_name = full_path.replace(".sgx", ".parquet")
                         df.to_parquet(out_name)
                         
-                        print(f"Converted: {file}")
+                        print(f"Converted -> {os.path.basename(out_name)}")
                         success_count += 1
                     
                 except Exception as e:
                     print(f"Failed {file}: {e}")
 
-    print(f"DONE. Found {count} files. Converted {success_count}.")
+    print(f"\nDONE. Found {count} files. Converted {success_count}.")
