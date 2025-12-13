@@ -1,59 +1,57 @@
 version: '3.8'
 
-# Common configuration block for Airflow services
-x-airflow-common: &airflow-common # Use the custom image we built in the Dockerfile
-    build: .
-    image: caspian-vault:latest
-    user: '${AIRFLOW_USER_UID:-50000}:0'
-    env_file: .env
-    volumes:
-        # 1. Mount the DAGs, solutions, and Python scripts
-        - ./airflow/dags:/opt/airflow/dags
-        - ./solutions:/opt/airflow/solutions
-        # 2. IMPORTANT: Mount the data folder for I/O. Both Airflow and your scripts access this at /data_assets
-        - ${DATA_DIR_PATH}:/data_assets
-        # 3. Create a persistent processed_data folder outside the data mount
-        - ./processed_data:/app/processed_data
-    depends_on:
-        postgres_db:
-            condition: service_healthy
-
 services:
-    # 1. POSTGRES DATABASE (The Data Vault & Airflow Metadata DB)
     postgres_db:
         image: postgres:15-alpine
         container_name: postgres_db
         environment:
-            POSTGRES_USER: ${POSTGRES_USER}
-            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-            POSTGRES_DB: ${POSTGRES_DB}
+            POSTGRES_USER: ${POSTGRES_USER:-user}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+            POSTGRES_DB: ${POSTGRES_DB:-caspian_db}
         healthcheck:
-            test: ['CMD', 'pg_isready', '-U', '${POSTGRES_USER}']
+            test: ['CMD', 'pg_isready', '-U', 'user']
             interval: 5s
             timeout: 5s
-            retries: 5
-        # Persist the database data
+            retries: 10
         volumes:
             - pg_data:/var/lib/postgresql/data
 
-    # 2. AIRFLOW SCHEDULER (Runs the DAGs)
     airflow_scheduler:
-        <<: *airflow-common
+        image: apache/airflow:2.9.3-python3.12
         container_name: airflow_scheduler
+        depends_on:
+            postgres_db:
+                condition: service_healthy
+        environment:
+            AIRFLOW__CORE__EXECUTOR: LocalExecutor
+            AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@postgres_db:5432/${POSTGRES_DB:-caspian_db}
+            AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+        volumes:
+            - ./airflow/dags:/opt/airflow/dags
+            - ./solutions:/opt/airflow/solutions
+            - ./data_assets:/data_assets
+            - ./processed_data:/opt/airflow/processed_data
         command: scheduler
 
-    # 3. AIRFLOW WEBSERVER (The UI)
     airflow_webserver:
-        <<: *airflow-common
+        image: apache/airflow:2.9.3-python3.12
         container_name: airflow_webserver
-        command: webserver
+        depends_on:
+            postgres_db:
+                condition: service_healthy
+        environment:
+            AIRFLOW__CORE__EXECUTOR: LocalExecutor
+            AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@postgres_db:5432/${POSTGRES_DB:-caspian_db}
+            AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+            AIRFLOW__WEBSERVER__EXPOSE_CONFIG: 'true'
         ports:
-            - '8080:8080' # Access Airflow UI
-        healthcheck:
-            test: ['CMD-SHELL', 'curl --fail http://localhost:8080/health']
-            interval: 60s
-            timeout: 5s
-            retries: 5
+            - '8080:8080'
+        volumes:
+            - ./airflow/dags:/opt/airflow/dags
+            - ./solutions:/opt/airflow/solutions
+            - ./data_assets:/data_assets
+            - ./processed_data:/opt/airflow/processed_data
+        command: webserver
 
 volumes:
     pg_data:
