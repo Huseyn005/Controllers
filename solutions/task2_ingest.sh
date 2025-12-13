@@ -18,4 +18,4 @@ fi
 
 # 2. Run the Python Logic
 # Calls the Python script in the root /app/
-python3 /app/task2_build.py --data-dir "$DATA_DIR"
+python3 /opt/airflow/solutions/task2_build.py --data-dir "$DATA_DIR"
