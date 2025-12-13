@@ -69,8 +69,10 @@ def main(target_dir):
         print(f"Error: Directory not found at {target_dir}")
         return
 
-    OUTPUT_DIR = os.path.join("Controllers", "processed_data")
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+    PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
+    BASE_OUTPUT_DIR = os.path.join(PROJECT_ROOT, "processed_data")
+    os.makedirs(BASE_OUTPUT_DIR, exist_ok=True)
 
     count = 0
     success_count = 0
@@ -105,7 +107,7 @@ def main(target_dir):
                         
                         df = loader.to_dataframe()
                         base_name = os.path.splitext(os.path.basename(full_path))[0]
-                        out_name = os.path.join(OUTPUT_DIR,f"{base_name}_reconstructed.parquet")
+                        out_name = os.path.join(BASE_OUTPUT_DIR,f"{base_name}_reconstructed.parquet")
                         df.to_parquet(out_name, index=False)
                         
                         print(f"Converted -> {os.path.basename(out_name)}")
