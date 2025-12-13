@@ -15,4 +15,4 @@ fi
 echo "Using: $LOAD_SGX_SCANNER"
 
 # Forward ALL arguments to Python 
-python3 "$LOAD_SGX_SCANNER" "$@"
+python "$LOAD_SGX_SCANNER" "$@"
