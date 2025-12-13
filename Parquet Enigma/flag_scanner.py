@@ -1,7 +1,18 @@
 import os
 import re
+import argparse
 
-target_folder = r"C:\Users\ASUS\Desktop\caspian_hackathon_assets\track_1_forensics"
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--data-dir",
+    required=True,
+    help="Exact data directory passed from bash"
+)
+
+args = parser.parse_args()
+
+target_folder = args.data_dir
+
 def scan_parquet_files(directory):
     print(f"Starting scan in: {directory}\n")
     

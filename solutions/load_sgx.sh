@@ -2,9 +2,16 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"  
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-FLAG_SCANNER="$(find "$ROOT_DIR" -type f -name "flag_scanner.py" -print -quit)"
+EXTRACTOR_SCANNER="$(find "$ROOT_DIR" -type f -name "parquet_extractor.py" -print -quit)"
 
-echo "Using: $FLAG_SCANNER"
-python3 "$FLAG_SCANNER"
+if [ -z "$EXTRACTOR_SCANNER" ]; then
+  echo "ERROR: parquet_extractor.py not found under $ROOT_DIR" >&2
+  exit 1
+fi
+
+echo "Using: $EXTRACTOR_SCANNER"
+
+# Forward all CLI arguments
+python "$EXTRACTOR_SCANNER" "$@"
