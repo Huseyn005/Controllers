@@ -1,76 +1,72 @@
 import os
 import struct
 import pandas as pd
-import numpy as np
+import hashlib
+from datetime import datetime
 
 class CaspianSGX:
     def __init__(self, file_path):
         self.file_path = file_path
         self.filename = os.path.basename(file_path)
         self.header = {}
-        self.data = None
+        self.traces = []
         self.raw_head = None
 
     def read(self):
         file_size = os.path.getsize(self.file_path)
         
         with open(self.file_path, 'rb') as f:
-            self.raw_head = f.read(64)
+            # Spec: Magic(8s), SurveyID(I), TraceCount(I)
+            self.raw_head = f.read(16)
             
-            if self.raw_head[:8] != b'CPETRO01':
+            if len(self.raw_head) < 16:
                 return False
 
-            ints = struct.unpack('<4I', self.raw_head[8:24])
+            magic, survey_id, trace_count = struct.unpack('<8sII', self.raw_head)
+            
+            if magic != b'CPETRO01':
+                return False
+
             self.header = {
-                'survey_id': ints[0],
-                'dim_1': ints[1],
-                'dim_2': ints[2],
-                'param_3': ints[3]
+                'survey_id': survey_id,
+                'trace_count': trace_count,
+                'file_size': file_size
             }
 
-            raw_data = f.read()
-            data_len = len(raw_data)
-            
-            if data_len % 4 == 0:
-                self.data = np.frombuffer(raw_data, dtype=np.float32)
-                self.header['format'] = 'float32'
-            elif data_len % 2 == 0:
-                self.data = np.frombuffer(raw_data, dtype=np.int16)
-                self.header['format'] = 'int16'
-            else:
-                self.data = np.frombuffer(raw_data, dtype=np.uint8)
-                self.header['format'] = 'uint8'
+            # Spec: WellID(4), Depth(4), Amp(4), Quality(1)
+            for _ in range(trace_count):
+                record_bytes = f.read(13)
+                if len(record_bytes) != 13: break
+                
+                # Unpack Little Endian (<)
+                well_id, depth, amp, qual = struct.unpack('<IffB', record_bytes)
+                
+                self.traces.append({
+                    'survey_id': survey_id, # Link to header
+                    'well_id': well_id,
+                    'depth': depth,
+                    'amplitude': amp,
+                    'quality_flag': qual
+                })
             
             return True
 
     def to_dataframe(self):
-        if self.data is None:
+        if not self.traces:
             return pd.DataFrame()
 
-        d1 = self.header['dim_1']
-        d2 = self.header['dim_2']
-        total = len(self.data)
+        # Convert list of dicts directly to DataFrame
+        df = pd.DataFrame(self.traces)
         
-        matrix = None
-
-        if d1 * d2 == total and d1 > 0:
-            matrix = self.data.reshape((d2, d1))
-        elif d1 > 0 and total % d1 == 0:
-            matrix = self.data.reshape((-1, d1))
-        else:
-            matrix = self.data.reshape((-1, 1))
-
-        df = pd.DataFrame(matrix)
-        df.columns = df.columns.astype(str)
-        
-        df['survey_id'] = self.header['survey_id']
-        df['format'] = self.header['format']
+        # Add Provenance Metadata (Required for Ep2 Vault)
+        df['ingest_source'] = self.filename
+        df['ingest_timestamp'] = datetime.now().isoformat()
         
         return df
 
-def main(DATA_DIR):
-    if not os.path.exists(DATA_DIR):
-        print(f"Error: Directory not found at {DATA_DIR}")
+def main(target_dir):
+    if not os.path.exists(target_dir):
+        print(f"Error: Directory not found at {target_dir}")
         return
 
     count = 0
@@ -78,7 +74,7 @@ def main(DATA_DIR):
 
     print("Scanning...")
 
-    for root, dirs, files in os.walk(DATA_DIR):
+    for root, dirs, files in os.walk(target_dir):
         for file in files:
             if file.endswith(".sgx"):
                 count += 1
@@ -89,20 +85,23 @@ def main(DATA_DIR):
                     if loader.read():
                         print(f"\n--- {file} ---")
                         
-                        hex_bytes = " ".join(f"{b:02X}" for b in loader.raw_head[:16])
-                        print(f"File Signature: {loader.raw_head[:8].decode()},    ID   : Survey {loader.header['survey_id']}") 
+                        # Print Header Info
+                        magic = loader.raw_head[:8].decode()
+                        sid = loader.header['survey_id']
+                        t_count = loader.header['trace_count']
                         
-                        d1, d2 = loader.header['dim_1'], loader.header['dim_2']
-                        print(f"  {'Dimensions':<12} : {d1} x {d2} (Traces/Samples)")
+                        print(f"File Signature: {magic},    ID   : Survey {sid}") 
+                        print(f"  {'Trace Count':<12} : {t_count} records")
 
-                        file_end = os.path.getsize(full_path)
+                        # Print Data Range
+                        file_end = loader.header['file_size']
+                        print(f" - Data Range: Bytes 16 - {file_end}")
+                        print(f" - Structure : 13-byte records (WellID, Depth, Amp, Quality)")
 
-                        print(f" - Data Range: Bytes 64 - {file_end}")
-                        print(f" - Storage: {loader.header['format']} (Little Endian)")
-
+                        # Convert & Save
                         df = loader.to_dataframe()
-                        out_name = full_path.replace(".sgx", ".parquet")
-                        df.to_parquet(out_name)
+                        out_name = full_path.replace(".sgx", "_reconstructed.parquet")
+                        df.to_parquet(out_name, index=False)
                         
                         print(f"Converted -> {os.path.basename(out_name)}")
                         success_count += 1
