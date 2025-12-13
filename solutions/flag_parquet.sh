@@ -15,4 +15,4 @@ fi
 echo "Using: $FLAG_SCANNER"
 
 # Forward ALL arguments to Python script
-python "$FLAG_SCANNER" "$@"
+python3 "$FLAG_SCANNER" "$@"
