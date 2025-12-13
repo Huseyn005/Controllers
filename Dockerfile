@@ -8,6 +8,6 @@ RUN mkdir -p solutions
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY task2_build.py solutions/
-COPY task2_validate.py solutions/
+COPY solutions/task2_build.py solutions/
+COPY solutions/task2_validate.py solutions/
 COPY solutions/task2_ingest.sh solutions/
