@@ -1,4 +1,4 @@
-import CaspianPetro
+import Caspian
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -12,4 +12,4 @@ args = parser.parse_args()
 
 DATA_DIR = args.data_dir
 
-CaspianPetro.main(DATA_DIR)
+Caspian.main(DATA_DIR)
