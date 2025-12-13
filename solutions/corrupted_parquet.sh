@@ -14,4 +14,4 @@ fi
 echo "Using: $EXTRACTOR_SCANNER"
 
 # Forward all CLI arguments
-python "$EXTRACTOR_SCANNER" "$@"
+python3 "$EXTRACTOR_SCANNER" "$@"
