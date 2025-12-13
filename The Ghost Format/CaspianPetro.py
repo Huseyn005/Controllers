@@ -69,6 +69,9 @@ def main(target_dir):
         print(f"Error: Directory not found at {target_dir}")
         return
 
+    OUTPUT_DIR = os.path.join("Controllers", "processed_data")
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
     count = 0
     success_count = 0
 
@@ -99,8 +102,10 @@ def main(target_dir):
                         print(f" - Structure : 13-byte records (WellID, Depth, Amp, Quality)")
 
                         # Convert & Save
+                        
                         df = loader.to_dataframe()
-                        out_name = full_path.replace(".sgx", "_reconstructed.parquet")
+                        base_name = os.path.splitext(os.path.basename(full_path))[0]
+                        out_name = os.path.join(OUTPUT_DIR,f"{base_name}_reconstructed.parquet")
                         df.to_parquet(out_name, index=False)
                         
                         print(f"Converted -> {os.path.basename(out_name)}")
