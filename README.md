@@ -103,13 +103,35 @@ python solutions/flag_scanner.py --data-dir /absolute/path/to/data_dir
 
 ### 4.2 Repairing Corrupted Parquet Files
 
-The repair scripts use advanced binary logic to recover files damaged by metadata errors or extra garbage bytes.Repair Logic Explained:Garbage Trimming: The script searches for the expected Parquet marker (PAR1) at the end of the file and truncates any excess junk bytes.Metadata Brute-Force: If trimming fails, it attempts to overwrite the 4-byte metadata length field (just before the final PAR1) with candidate sizes until the file loads successfully.Critical Rule: Prevent Double ReconstructionThe output file must be saved to processed_data/ and named to prevent the repair script from endlessly reprocessing its own output (e.g., *_reconstructed_reconstructed.parquet).Bash# Cleanup command if accidental duplicates are created:
+The repair scripts use advanced binary logic to recover files damaged by metadata errors or extra garbage bytes. 
+Repair Logic Explained:
+1) **Garbage Trimming:** The script searches for the expected Parquet marker (PAR1) at the end of the file and truncates any excess junk bytes.
+2) **Metadata Brute-Force:** If trimming fails, it attempts to overwrite the 4-byte metadata length field (just before the final PAR1) with candidate sizes until the file loads successfully.
+**Critical Rule: Prevent Double Reconstruction**
+The output file must be saved to processed_data/ and named to prevent the repair script from endlessly reprocessing its own output (e.g., *_reconstructed_reconstructed.parquet).
+```Bash
+# Cleanup command if accidental duplicates are created:
 rm -f processed_data/*_reconstructed_reconstructed.parquet
-4.3 Converting Custom Formats (SGX/Ghost)If the pipeline involves converting proprietary formats (e.g., .sgx):Bashbash solutions/load_sgx.sh /absolute/path/to/data_dir
-Expected: Clean Parquet files produced and ready for the next stage.
+```
+### 4.3 Converting Custom Formats (SGX/Ghost)
+If the pipeline involves converting proprietary formats (e.g., .sgx):
+```Bash
+bash solutions/load_sgx.sh /absolute/path/to/data_dir
+```
+*Expected: Clean Parquet files produced and ready for the next stage.*
 
-## 🏛️ 5. RAW VAULT STAGE (PostgreSQL Ingestion)The Raw Vault provides a governance layer by preserving history and source truth while handling incremental loads and schema drift.
-### 5.1 Vault Table PatternsTable TypePurposeKeyingHUBUnique Business Keys (e.g., Well ID, Survey Name)hub_hash_key (SHA256)LINKRelationships between keys (e.g., Well-Survey relationship)link_hash_key (SHA256)SATDescriptive, time-variant attributes (e.g., seismic data)sat_hash_key (SHA256)
+## 🏛️ 5. RAW VAULT STAGE (PostgreSQL Ingestion)
+
+The Raw Vault provides a governance layer by preserving history and source truth while handling incremental loads and schema drift.
+
+### 5.1 Vault Table PatternsTable 
+
+| Type | Purpose | Keying |
+| --- | --- | --- |
+| HUB | Unique Business Keys (e.g., Well ID, Survey Name) | hub_hash_key (SHA256)|
+| LINK | Relationships between keys (e.g., Well-Survey relationship) | link_hash_key (SHA256) | 
+| SAT | Descriptive, time-variant attributes (e.g., seismic data) | sat_hash_key (SHA256) |
+
 ### 5.2 Deterministic Key GenerationHash keys are used to ensure stable joins and reproducibility. Normalization (e.g., trimming, uppercasing) is critical before hashing.Hash Key = SHA256(UPPER(TRIM(Business Key String)))
 ### 5.3 Load ProcessThe ingestion task reads the reconstructed files, generates hash keys, and inserts data into the appropriate HUB/LINK/SAT tables.Bash# Example Run: Orchestrated by Airflow
 bash solutions/task2_ingest.sh /absolute/path/to/data_dir
