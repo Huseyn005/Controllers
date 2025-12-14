@@ -4,6 +4,11 @@ WORKDIR /opt/airflow
 
 RUN mkdir -p solutions
 
+USER root
+
+RUN apt-get update && apt-get install -y libssl-dev libpq-dev && rm -rf /var/lib/apt/lists/*
+
+USER ${AIRFLOW_UID}
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

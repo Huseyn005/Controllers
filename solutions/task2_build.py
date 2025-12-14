@@ -50,6 +50,17 @@ def build_vault(data_dir: str):
         write_outputs(engine, hub_survey, "hub_survey", processed_dir)
 
         sat_survey = df[["hub_survey_key", "survey_type", "survey_type_id"]].copy()
+        
+        if "source_format" in df.columns:
+            sat_survey["source_format"] = df["source_format"]
+        elif "file_format" in df.columns:
+            sat_survey["source_format"] = df["file_format"]
+        elif "format" in df.columns:
+            sat_survey["source_format"] = df["format"]
+        else:
+    # default for your metadata CSV
+            sat_survey["source_format"] = "csv"
+
         sat_survey["load_date"] = now
         write_outputs(engine, sat_survey, "sat_survey_details", processed_dir)
 

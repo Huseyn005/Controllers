@@ -3,3 +3,4 @@ pyarrow
 numpy
 psycopg2-binary
 apache-airflow==2.9.3
+deltalake
