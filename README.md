@@ -192,8 +192,14 @@ Access Superset UI: **http://localhost:8088**
 ## 🧯 9. TROUBLESHOOTING & CHEAT SHEET
 | Problem | Symptom | Solution Command |
 | Airflow DB not initialized | Airflow containers Exit 1 (with DB init error) | docker-compose exec airflow_webserver airflow db init | 
-|File Visibility ErrorDAG fails finding solutions/script.shCheck volume mappings in docker-compose.yml (- ./solutions:/opt/airflow/solutions:rw)General Crash / Exit 1
-Airflow container status is Exit 1docker-compose logs --tail=200 airflow_webserverCleanup Orphan ContainersWarnings about orphaned servicesdocker-compose down --remove-orphansVerify PostgresNeed to inspect vault/mart tablesdocker exec -it postgres_db psql -U <user> -d <db>Common Commands Cheat SheetBash# Start Core Platform
+|File Visibility Error | DAG fails finding solutions/script.sh | Check volume mappings in docker-compose.yml (- ./solutions:/opt/airflow/solutions:rw) |
+| General Crash / Exit 1 | Airflow container status is Exit 1 | docker-compose logs --tail=200 airflow_webserver |
+| Cleanup Orphan Containers | Warnings about orphaned services | docker-compose down --remove-orphans
+| Verify Postgres | Need to inspect vault/mart tables | docker exec -it postgres_db psql -U <user> -d <db> |
+
+### Common Commands Cheat Sheet
+```Bash
+# Start Core Platform
 docker-compose up -d postgres_db airflow_webserver airflow_scheduler
 
 # Stop All Containers
@@ -205,6 +211,6 @@ docker-compose down --remove-orphans --volumes
 # Initialize Airflow DB (if needed)
 docker-compose run --rm airflow_webserver airflow db init
 docker-compose run --rm airflow_webserver airflow users create --username admin --password admin ...
-
+```
 # Start Superset (optional)
 docker-compose -f docker-compose-superset.yml up -d
