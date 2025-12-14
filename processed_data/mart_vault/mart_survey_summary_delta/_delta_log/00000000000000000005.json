@@ -1,0 +1,1 @@
+{"commitInfo":{"timestamp":1765703342669,"operation":"WRITE","operationParameters":{"mode":"Overwrite"},"engineInfo":"delta-rs:py-1.2.1","clientVersion":"delta-rs.py-1.2.1","operationMetrics":{"execution_time_ms":1,"num_added_files":0,"num_added_rows":0,"num_partitions":0,"num_removed_files":0}}}
