@@ -55,7 +55,9 @@ cd Controllers
 ### Essential variables include POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
 nano .env
 ```
-## 🐳 2. Start Core Platform (Airflow + PostgreSQL)We start the database first, then the Airflow services. Ensure the SSH tunnel is active for ports 8080 and 8088 on your local machine.
+## 🐳 2. Start Core Platform (Airflow + PostgreSQL)
+
+We start the database first, then the Airflow services. Ensure the SSH tunnel is active for ports 8080 and 8088 on your local machine.
 
 ### 2.1 Start Services
 ```Bash
