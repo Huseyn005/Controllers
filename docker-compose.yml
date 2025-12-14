@@ -56,3 +56,6 @@ services:
 
 volumes:
     pg_data:
+networks:
+  default:
+    name: caspian_network
