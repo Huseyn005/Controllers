@@ -64,7 +64,8 @@ docker-compose up -d postgres_db airflow_webserver airflow_scheduler
 # Verify status (All should show 'Up')
 docker-compose ps
 ```
-### 2.2 Access Airflow UIThe webserver publishes on port 8080.Access Airflow UI: http://localhost:8080
+### 2.2 Access Airflow UI
+The webserver publishes on port 8080.Access Airflow UI: **http://localhost:8080**
 
 ## 🧠 3. Airflow Initialization (First Run Only)
 If your Airflow containers crash (Exit 1) or you see the database initialization error, you must re-run these steps.
