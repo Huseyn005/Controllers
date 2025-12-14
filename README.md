@@ -132,30 +132,67 @@ The Raw Vault provides a governance layer by preserving history and source truth
 | LINK | Relationships between keys (e.g., Well-Survey relationship) | link_hash_key (SHA256) | 
 | SAT | Descriptive, time-variant attributes (e.g., seismic data) | sat_hash_key (SHA256) |
 
-### 5.2 Deterministic Key GenerationHash keys are used to ensure stable joins and reproducibility. Normalization (e.g., trimming, uppercasing) is critical before hashing.Hash Key = SHA256(UPPER(TRIM(Business Key String)))
-### 5.3 Load ProcessThe ingestion task reads the reconstructed files, generates hash keys, and inserts data into the appropriate HUB/LINK/SAT tables.Bash# Example Run: Orchestrated by Airflow
+### 5.2 Deterministic Key Generation
+Hash keys are used to ensure stable joins and reproducibility. Normalization (e.g., trimming, uppercasing) is critical before hashing.
+
+**Hash Key = SHA256(UPPER(TRIM(Business Key String)))**
+
+### 5.3 Load ProcessThe ingestion task reads the reconstructed files, generates hash keys, and inserts data into the appropriate HUB/LINK/SAT tables.
+```Bash
+# Example Run: Orchestrated by Airflow
 bash solutions/task2_ingest.sh /absolute/path/to/data_dir
-### 5.4 VerificationBash# Enter the Postgres container terminal
+```
+
+### 5.4 Verification
+```Bash
+# Enter the Postgres container terminal
 docker exec -it postgres_db psql -U <POSTGRES_USER> -d <POSTGRES_DB>
 
 # Verify table existence and row counts
 \dt
 SELECT COUNT(*) FROM hub_well;
 SELECT COUNT(*) FROM sat_seismic_data;
-## 📊 6. ETL STAGE — ANALYTICS MARTSThe final layer consists of analytics-ready tables built from the Raw Vault, optimized for BI tools and KPI reporting.
-### 6.1 Mart DefinitionMarts are denormalized and aggregated tables (e.g., mart_well_performance, mart_survey_quality).
-### 6.2 Build MartsBash# Example Run: Orchestrated by Airflow
-```bash
+```
+
+## 📊 6. ETL STAGE — ANALYTICS MARTS
+The final layer consists of analytics-ready tables built from the Raw Vault, optimized for BI tools and KPI reporting.
+### 6.1 Mart DefinitionMarts are denormalized and aggregated tables (e.g., *mart_well_performance*, *mart_survey_quality*).
+### 6.2 Build Marts
+```Bash
+# Example Run: Orchestrated by Airflow
 python solutions/mart_etl.py --data-dir /absolute/path/to/data_dir
 ```
-### 6.3 VerificationSQL-- In the Postgres terminal
+### 6.3 Verification
+
+SQL-- In the Postgres terminal
 \dt mart_*
 SELECT * FROM mart_well_performance LIMIT 20;
-## ⏱️ 7. ORCHESTRATION — APACHE AIRFLOWThe seismic_reckoning_pipeline DAG is responsible for running the entire pipeline from end-to-end.7.1 Run the DAGAccess the Airflow UI (http://localhost:8080).Enable the DAG.Trigger the run and monitor the logs per task.Tip: If you modify your DAG code, always restart the Airflow services:Bashdocker-compose restart airflow_webserver airflow_scheduler
-## 📈 8. DASHBOARD — APACHE SUPERSET (Optional)8.1 Start SupersetSuperset is started using its dedicated compose file:Bashdocker-compose -f docker-compose-superset.yml up -d
-Access Superset UI: http://localhost:80888.2 Connect DataIn Superset, go to Settings → Database Connections.Use the internal Docker connection string to link to your mart database:postgresql+psycopg2://<POSTGRES_USER>:<POSTGRES_PASSWORD>@postgres_db:5432/<POSTGRES_DB>Register your mart_* tables as datasets and begin building charts and dashboards.
+
+## ⏱️ 7. ORCHESTRATION — APACHE AIRFLOW
+The *seismic_reckoning_pipeline* DAG is responsible for running the entire pipeline from end-to-end.
+### 7.1 Run the DAG
+1) Access the Airflow UI (http://localhost:8080).
+2) Enable the DAG.
+3) Trigger the run and monitor the logs per task.
+**Tip:** If you modify your DAG code, always restart the Airflow services:
+```Bash
+docker-compose restart airflow_webserver airflow_scheduler
+```
+## 📈 8. DASHBOARD — APACHE SUPERSET (Optional)
+### 8.1 Start SupersetSuperset is started using its dedicated compose file:
+```Bash
+docker-compose -f docker-compose-superset.yml up -d
+```
+Access Superset UI: **http://localhost:8088**
+### 8.2 Connect Data
+1) In Superset, go to Settings → Database Connections.
+2) Use the internal Docker connection string to link to your mart database:
+   **postgresql+psycopg2://<POSTGRES_USER>:<POSTGRES_PASSWORD>@postgres_db:5432/<POSTGRES_DB>**
+3) Register your mart_* tables as datasets and begin building charts and dashboards.
 ## 🧯 9. TROUBLESHOOTING & CHEAT SHEET
-ProblemSymptomSolution CommandAirflow DB not initializedAirflow containers Exit 1 (with DB init error)docker-compose exec airflow_webserver airflow db initFile Visibility ErrorDAG fails finding solutions/script.shCheck volume mappings in docker-compose.yml (- ./solutions:/opt/airflow/solutions:rw)General Crash / Exit 1
+| Problem | Symptom | Solution Command |
+| Airflow DB not initialized | Airflow containers Exit 1 (with DB init error) | docker-compose exec airflow_webserver airflow db init | 
+|File Visibility ErrorDAG fails finding solutions/script.shCheck volume mappings in docker-compose.yml (- ./solutions:/opt/airflow/solutions:rw)General Crash / Exit 1
 Airflow container status is Exit 1docker-compose logs --tail=200 airflow_webserverCleanup Orphan ContainersWarnings about orphaned servicesdocker-compose down --remove-orphansVerify PostgresNeed to inspect vault/mart tablesdocker exec -it postgres_db psql -U <user> -d <db>Common Commands Cheat SheetBash# Start Core Platform
 docker-compose up -d postgres_db airflow_webserver airflow_scheduler
 
