@@ -27,7 +27,7 @@ services:
             AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@postgres_db:5432/${POSTGRES_DB:-caspian_db}
             AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
         volumes:
-            - ./airflow/dags:/opt/airflow/dags
+            - ./dags:/opt/airflow/dags
             - ./solutions:/opt/airflow/solutions
             - ./data_assets:/data_assets
             - ./processed_data:/opt/airflow/processed_data
@@ -47,7 +47,7 @@ services:
         ports:
             - '8080:8080'
         volumes:
-            - ./airflow/dags:/opt/airflow/dags
+            - ./dags:/opt/airflow/dags
             - ./solutions:/opt/airflow/solutions
             - ./data_assets:/data_assets
             - ./processed_data:/opt/airflow/processed_data

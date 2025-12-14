@@ -18,3 +18,4 @@ COPY solutions/task2_validate.py solutions/
 COPY solutions/task2_ingest.sh solutions/
 
 COPY db_utils.py /opt/airflow/db_utils.py
+COPY dags/ /opt/airflow/dags/
