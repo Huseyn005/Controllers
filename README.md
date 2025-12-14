@@ -108,8 +108,10 @@ python solutions/flag_scanner.py --data-dir /absolute/path/to/data_dir
 
 The repair scripts use advanced binary logic to recover files damaged by metadata errors or extra garbage bytes. 
 Repair Logic Explained:
+
 1) **Garbage Trimming:** The script searches for the expected Parquet marker (PAR1) at the end of the file and truncates any excess junk bytes.
 2) **Metadata Brute-Force:** If trimming fails, it attempts to overwrite the 4-byte metadata length field (just before the final PAR1) with candidate sizes until the file loads successfully.
+
 **Critical Rule: Prevent Double Reconstruction**
 The output file must be saved to processed_data/ and named to prevent the repair script from endlessly reprocessing its own output (e.g., *_reconstructed_reconstructed.parquet).
 ```Bash
@@ -159,7 +161,10 @@ SELECT COUNT(*) FROM sat_seismic_data;
 
 ## 📊 6. ETL STAGE — ANALYTICS MARTS
 The final layer consists of analytics-ready tables built from the Raw Vault, optimized for BI tools and KPI reporting.
-### 6.1 Mart DefinitionMarts are denormalized and aggregated tables (e.g., *mart_well_performance*, *mart_survey_quality*).
+### 6.1 Mart Definition
+
+Marts are denormalized and aggregated tables (e.g., *mart_well_performance*, *mart_survey_quality*)
+
 ### 6.2 Build Marts
 ```Bash
 # Example Run: Orchestrated by Airflow
@@ -194,6 +199,7 @@ Access Superset UI: **http://localhost:8088**
 3) Register your mart_* tables as datasets and begin building charts and dashboards.
 ## 🧯 9. TROUBLESHOOTING & CHEAT SHEET
 | Problem | Symptom | Solution Command |
+| :--- | :--- | :--- | 
 | Airflow DB not initialized | Airflow containers Exit 1 (with DB init error) | docker-compose exec airflow_webserver airflow db init | 
 |File Visibility Error | DAG fails finding solutions/script.sh | Check volume mappings in docker-compose.yml (- ./solutions:/opt/airflow/solutions:rw) |
 | General Crash / Exit 1 | Airflow container status is Exit 1 | docker-compose logs --tail=200 airflow_webserver |
