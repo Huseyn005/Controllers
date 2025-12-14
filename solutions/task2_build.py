@@ -1,35 +1,11 @@
-import os
+import os; import sys
 import argparse
 import glob
 import hashlib
 from datetime import datetime
-
 import pandas as pd
-from sqlalchemy import create_engine
-
-
-# --- DATABASE CONFIGURATION ---
-POSTGRES_HOST = os.getenv("POSTGRES_HOST", "postgres_db")
-POSTGRES_DB = os.getenv("POSTGRES_DB", "caspian_db")
-POSTGRES_USER = os.getenv("POSTGRES_USER", "user")
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
-
-
-def get_db_engine():
-    """
-    Create a SQLAlchemy engine for Pandas .to_sql().
-    If DB is unreachable, return None and still write Parquet outputs.
-    """
-    try:
-        uri = f"postgresql+psycopg2://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:5432/{POSTGRES_DB}"
-        engine = create_engine(uri)
-        with engine.connect():
-            print(f"[DB] Connected to PostgreSQL at {POSTGRES_HOST}")
-        return engine
-    except Exception as e:
-        print(f"[DB WARNING] Could not connect to PostgreSQL, will continue with Parquet only: {e}")
-        return None
-
+sys.path.insert(0, "/opt/airflow")
+from db_utils import get_db_engine
 
 def write_outputs(engine, df: pd.DataFrame, table_name: str, out_dir: str):
     """Write to Postgres (best-effort) and ALWAYS write Parquet."""

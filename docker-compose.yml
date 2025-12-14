@@ -51,6 +51,7 @@ services:
             - ./solutions:/opt/airflow/solutions
             - ./data_assets:/data_assets
             - ./processed_data:/opt/airflow/processed_data
+            - ./db_utils.py:/opt/airflow/db_utils.py
         command: webserver
 
 volumes:

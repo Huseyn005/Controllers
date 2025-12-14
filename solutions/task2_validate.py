@@ -1,29 +1,9 @@
-import os
+import os; import sys
 import argparse
 import pandas as pd
 import psycopg2
-# ADD: Import SQLAlchemy for robust database connection
-from sqlalchemy import create_engine
-
-# --- DATABASE CONFIGURATION ---
-# FIX 1: Use the Docker service name and Airflow defaults
-POSTGRES_HOST = os.getenv('POSTGRES_HOST', 'postgres_db')
-POSTGRES_DB = os.getenv('POSTGRES_DB', 'caspian_db')
-POSTGRES_USER = os.getenv('POSTGRES_USER', 'user')
-POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD', 'password')
-
-def get_db_engine():
-    """Creates and returns a SQLAlchemy Engine for robust connection."""
-    try:
-        DB_URI = f'postgresql+psycopg2://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:5432/{POSTGRES_DB}'
-        engine = create_engine(DB_URI)
-        # Attempt connection to verify
-        with engine.connect():
-            print(f"[DB] Connected to PostgreSQL at {POSTGRES_HOST}")
-        return engine
-    except Exception as e:
-        print(f"[DB ERROR] Validation failed: Could not connect to PostgreSQL: {e}")
-        return None
+sys.path.insert(0, "/opt/airflow")
+from db_utils import get_db_engine
 
 def connect_and_query(query, engine):
     """Connects to DB using the SQLAlchemy Engine, runs query, and returns DataFrame."""
